@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Contêiner do servidor web (adapte ao seu)
+  apache_server:
+    build: ./php_apache_container
+    ports:
+      - "80:80"   # Mapeia a porta 80 do host para a 80 do contêiner
+      - "443:443" # Mapeia a porta 443 do host para a 443 do contêiner
+    volumes:
+      - website_data:/var/www/html
+    restart: unless-stopped
+
+    environment:
+      - MYSQL_HOST=10.76.224.3:3306 #IP local do server MySQL
+      - MYSQL_DATABASE=usuario-plugtools
+      - MYSQL_USER=user-mysql-plugtools
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD} # Docker Compose irá substituir isso pelo valor do arquivo .env
+
+  # Contêiner para sincronização com o GitHub
+  github_sync:
+    build: ./git_sync_container
+    volumes:
+      # Monta o volume compartilhado onde o código será salvo
+      - website_data:/var/www/html
+      # Monta a chave SSH privada em modo de apenas leitura
+      - ./.ssh/deploy_key:/root/.ssh/deploy_key:ro
+    entrypoint: ['/usr/local/bin/sync.sh']
+    restart: unless-stopped
+
+volumes:
+  # Define o volume nomeado que será compartilhado entre os contêineres
+  website_data:

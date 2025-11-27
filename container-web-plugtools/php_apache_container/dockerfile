@@ -1,0 +1,51 @@
+# Use a imagem base do PHP com Apache
+FROM php:8.2-apache
+
+# Instala as dependências necessárias para a extensão pdo_mysql
+# e outras extensões comuns que podem ser úteis
+RUN apt-get update && \
+    DEBIEN_FRONTEND=noninteractive apt-get install -y \
+    libzip-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    jpegoptim optipng pngquant gifsicle \
+    libonig-dev \
+    libxml2-dev \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instala a extensão pdo_mysql e outras extensões PHP comuns
+# O comando docker-php-ext-install é uma ferramenta conveniente fornecida pela imagem oficial do PHP
+RUN docker-php-ext-install \
+    pdo_mysql \
+    mysqli \
+    gd \
+    zip \
+    exif \
+    intl \
+    opcache
+
+# Instala o pacote ssl-cert (útil para certificados autoassinados e dependências)
+RUN apt-get update && \
+    DEBIEN_FRONTEND=noninteractive apt-get install -y ssl-cert && \
+    rm -r /var/lib/apt/lists/*
+
+# Habilita o módulo SSL do Apache
+RUN a2enmod ssl
+
+# Habilita o site SSL padrão do Apache (default-ssl.conf)
+RUN a2ensite default-ssl
+
+# Copia os certificados SSL para o local correto dentro do contêiner
+# Certifique-se de que o caminho de origem aqui corresponde ao local onde você criou seus certificados no host
+COPY ./ssl_certs/localhost.crt /etc/ssl/certs/localhost.crt
+COPY ./ssl_certs/localhost.key /etc/ssl/private/localhost.key
+
+# Altera a configuração do VirtualHost padrão para usar seus certificados SSL
+RUN sed -i 's|SSLCertificateFile /etc/ssl/certs/ssl-cert-snakeoil.pem|SSLCertificateFile /etc/ssl/certs/localhost.crt|g' /etc/apache2/sites-available/default-ssl.conf && \
+    sed -i 's|SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key|SSLCertificateKeyFile /etc/ssl/private/localhost.key|g' /etc/apache2/sites-available/default-ssl.conf
+
+# Exponha as portas 80 e 443
+EXPOSE 80
+EXPOSE 443

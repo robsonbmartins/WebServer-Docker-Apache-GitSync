@@ -1,0 +1,17 @@
+# Use uma imagem base Alpine que já inclui o Git e o cliente SSH
+FROM alpine/git:latest
+
+# Instale o cliente OpenSSH para usar com chaves SSH
+RUN apk add --no-cache openssh-client
+
+# Copie o script de sincronização para dentro do contêiner
+COPY sync.sh /usr/local/bin/sync.sh
+
+# Dê permissão de execução para o script
+RUN chmod +x /usr/local/bin/sync.sh
+
+# Define o diretório de trabalho
+WORKDIR /app
+
+# Comando que será executado quando o contêiner iniciar
+CMD ["/usr/local/bin/sync.sh"]
